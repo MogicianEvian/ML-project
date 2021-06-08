@@ -42,7 +42,7 @@ parser.add_argument('--world-size', default=1)
 parser.add_argument('--rank', default=0)
 
 parser.add_argument('-p', '--print-freq', default=50, type=int, metavar='N', help='print frequency')
-parser.add_argument('--result-dir', default='../drive/MyDrive/lipnet', type=str)
+parser.add_argument('--result-dir', default='../drive/MyDrive/lipnet/', type=str)
 parser.add_argument('--filter-name', default='', type=str)
 parser.add_argument('--seed', default=2020, type=int)
 parser.add_argument('--visualize', action='store_true')
@@ -373,7 +373,7 @@ def main_worker(gpu, parallel, args, result_dir):
                 logger.print("Generate adversarial examples on test dataset")
             gen_adv_examples(model, attacker, test_loader, gpu, parallel, logger)
             certified_test(model, args.eps_test, up, down, epoch, test_loader, logger, gpu, parallel)
-        if epoch % 1 == 0:
+        if epoch % 10 == 9:
             #on colab
             torch.save({
                 'state_dict': model.state_dict(),
