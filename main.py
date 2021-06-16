@@ -290,15 +290,7 @@ def main_worker(gpu, parallel, args, result_dir):
     from model.mlp import MLPFeature, MLP
     from model.conv import ConvFeature, Conv
     model_name, params = parse_function_call(args.model)
-    if args.predictor_hidden_size > 0:
-        model = locals()[model_name](input_dim=input_dim[args.dataset], **params)
-        predictor = Predictor(model.out_features, args.predictor_hidden_size, num_classes)
-    else:
-        model = locals()[model_name](input_dim=input_dim[args.dataset], num_classes=num_classes, **params)
-        predictor = BoundFinalIdentity()
-    model = Model(model, predictor, eps=0)
-    model = model.cuda(gpu)
-    
+
     # swa
     swa_model = None
     if args.swa:
@@ -311,6 +303,15 @@ def main_worker(gpu, parallel, args, result_dir):
         swa_model = Model(swa_model, predictor, eps=0)
         swa_model = swa_model.cuda(gpu)
         swa_n = 0
+        
+    if args.predictor_hidden_size > 0:
+        model = locals()[model_name](input_dim=input_dim[args.dataset], **params)
+        predictor = Predictor(model.out_features, args.predictor_hidden_size, num_classes)
+    else:
+        model = locals()[model_name](input_dim=input_dim[args.dataset], num_classes=num_classes, **params)
+        predictor = BoundFinalIdentity()
+    model = Model(model, predictor, eps=0)
+    model = model.cuda(gpu)
 
     if parallel:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
