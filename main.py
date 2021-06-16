@@ -296,14 +296,14 @@ def main_worker(gpu, parallel, args, result_dir):
     if args.swa:
         if args.predictor_hidden_size > 0:
             swa_model = locals()[model_name](input_dim=input_dim[args.dataset], **params)
-            predictor = Predictor(model.out_features, args.predictor_hidden_size, num_classes)
+            predictor = Predictor(swa_model.out_features, args.predictor_hidden_size, num_classes)
         else:
             swa_model = locals()[model_name](input_dim=input_dim[args.dataset], num_classes=num_classes, **params)
             predictor = BoundFinalIdentity()
         swa_model = Model(swa_model, predictor, eps=0)
         swa_model = swa_model.cuda(gpu)
         swa_n = 0
-        
+
     if args.predictor_hidden_size > 0:
         model = locals()[model_name](input_dim=input_dim[args.dataset], **params)
         predictor = Predictor(model.out_features, args.predictor_hidden_size, num_classes)
