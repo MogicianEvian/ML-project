@@ -298,9 +298,7 @@ def main_worker(gpu, parallel, args, result_dir):
         predictor = BoundFinalIdentity()
     model = Model(model, predictor, eps=0)
     model = model.cuda(gpu)
-    if parallel:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
-
+    
     # swa
     swa_model = None
     if args.swa:
@@ -313,6 +311,9 @@ def main_worker(gpu, parallel, args, result_dir):
         swa_model = Model(swa_model, predictor, eps=0)
         swa_model = swa_model.cuda(gpu)
         swa_n = 0
+
+    if parallel:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     loss_name, params = parse_function_call(args.loss)
     loss = Loss(globals()[loss_name](**params), args.kappa)
