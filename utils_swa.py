@@ -10,10 +10,10 @@ import torch.backends.cudnn as cudnn
 from advertorch.attacks import LinfPGDAttack, L2PGDAttack
 from advertorch.context import ctx_noparamgrad
 from advertorch.utils import NormalizeByChannelMeanStd
-from datasets import *
-from models.preactivate_resnet import *
-from models.vgg import *
-from models.wideresnet import *
+# from datasets import *
+# from models.preactivate_resnet import *
+# from models.vgg import *
+# from models.wideresnet import *
 
 __all__ = ['save_checkpoint', 'setup_dataset_models', 'setup_dataset_models_standard', 'setup_seed', 'moving_average', 'bn_update', 'print_args',
             'train_epoch', 'train_epoch_adv', 'train_epoch_adv_dual_teacher',
@@ -35,136 +35,136 @@ def save_checkpoint(state, is_SA_best, is_RA_best, is_SA_best_swa, is_RA_best_sw
 
 
 # prepare dataset and models
-def setup_dataset_models(args):
+# def setup_dataset_models(args):
 
-    # prepare dataset
-    if args.dataset == 'cifar10':
-        classes = 10
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
-        train_loader, val_loader, test_loader = cifar10_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     # prepare dataset
+#     if args.dataset == 'cifar10':
+#         classes = 10
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
+#         train_loader, val_loader, test_loader = cifar10_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    elif args.dataset == 'cifar100':
-        classes = 100
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.5071, 0.4865, 0.4409], std=[0.2673, 0.2564, 0.2762])
-        train_loader, val_loader, test_loader = cifar100_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     elif args.dataset == 'cifar100':
+#         classes = 100
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.5071, 0.4865, 0.4409], std=[0.2673, 0.2564, 0.2762])
+#         train_loader, val_loader, test_loader = cifar100_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    elif args.dataset == 'tinyimagenet':
-        classes = 200
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262])
-        train_loader, val_loader, test_loader = tiny_imagenet_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     elif args.dataset == 'tinyimagenet':
+#         classes = 200
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262])
+#         train_loader, val_loader, test_loader = tiny_imagenet_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    else:
-        raise ValueError("Unknown Dataset")
+#     else:
+#         raise ValueError("Unknown Dataset")
 
-    #prepare model
+#     #prepare model
 
-    if args.arch == 'resnet18':
-        model = ResNet18(num_classes = classes)
-        model.normalize = dataset_normalization
+#     if args.arch == 'resnet18':
+#         model = ResNet18(num_classes = classes)
+#         model.normalize = dataset_normalization
 
-        if args.swa:
-            swa_model = ResNet18(num_classes = classes)
-            swa_model.normalize = dataset_normalization
-        else:
-            swa_model = None
+#         if args.swa:
+#             swa_model = ResNet18(num_classes = classes)
+#             swa_model.normalize = dataset_normalization
+#         else:
+#             swa_model = None
 
-        if args.lwf:
-            teacher1 = ResNet18(num_classes = classes)
-            teacher1.normalize = dataset_normalization
-            teacher2 = ResNet18(num_classes = classes)
-            teacher2.normalize = dataset_normalization
-        else:
-            teacher1 = None
-            teacher2 = None 
+#         if args.lwf:
+#             teacher1 = ResNet18(num_classes = classes)
+#             teacher1.normalize = dataset_normalization
+#             teacher2 = ResNet18(num_classes = classes)
+#             teacher2.normalize = dataset_normalization
+#         else:
+#             teacher1 = None
+#             teacher2 = None 
 
-    elif args.arch == 'wideresnet':
-        model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
-        model.normalize = dataset_normalization
+#     elif args.arch == 'wideresnet':
+#         model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
+#         model.normalize = dataset_normalization
 
-        if args.swa:
-            swa_model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
-            swa_model.normalize = dataset_normalization
-        else:
-            swa_model = None
+#         if args.swa:
+#             swa_model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
+#             swa_model.normalize = dataset_normalization
+#         else:
+#             swa_model = None
 
-        if args.lwf:
-            teacher1 = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
-            teacher1.normalize = dataset_normalization
-            teacher2 = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
-            teacher2.normalize = dataset_normalization
-        else:
-            teacher1 = None
-            teacher2 = None 
+#         if args.lwf:
+#             teacher1 = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
+#             teacher1.normalize = dataset_normalization
+#             teacher2 = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
+#             teacher2.normalize = dataset_normalization
+#         else:
+#             teacher1 = None
+#             teacher2 = None 
 
-    elif args.arch == 'vgg16':
-        model = vgg16_bn(num_classes = 10)
-        model.normalize = dataset_normalization
+#     elif args.arch == 'vgg16':
+#         model = vgg16_bn(num_classes = 10)
+#         model.normalize = dataset_normalization
 
-        if args.swa:
-            swa_model = vgg16_bn(num_classes = 10)
-            swa_model.normalize = dataset_normalization
-        else:
-            swa_model = None
+#         if args.swa:
+#             swa_model = vgg16_bn(num_classes = 10)
+#             swa_model.normalize = dataset_normalization
+#         else:
+#             swa_model = None
 
-        if args.lwf:
-            teacher1 = vgg16_bn(num_classes = 10)
-            teacher1.normalize = dataset_normalization
-            teacher2 = vgg16_bn(num_classes = 10)
-            teacher2.normalize = dataset_normalization
-        else:
-            teacher1 = None
-            teacher2 = None 
+#         if args.lwf:
+#             teacher1 = vgg16_bn(num_classes = 10)
+#             teacher1.normalize = dataset_normalization
+#             teacher2 = vgg16_bn(num_classes = 10)
+#             teacher2.normalize = dataset_normalization
+#         else:
+#             teacher1 = None
+#             teacher2 = None 
 
-    else:
-        raise ValueError("Unknown Model")   
+#     else:
+#         raise ValueError("Unknown Model")   
     
-    return train_loader, val_loader, test_loader, model, swa_model, teacher1, teacher2
+#     return train_loader, val_loader, test_loader, model, swa_model, teacher1, teacher2
 
-def setup_dataset_models_standard(args):
+# def setup_dataset_models_standard(args):
 
-    # prepare dataset
-    if args.dataset == 'cifar10':
-        classes = 10
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
-        train_loader, val_loader, test_loader = cifar10_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     # prepare dataset
+#     if args.dataset == 'cifar10':
+#         classes = 10
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
+#         train_loader, val_loader, test_loader = cifar10_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    elif args.dataset == 'cifar100':
-        classes = 100
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.5071, 0.4865, 0.4409], std=[0.2673, 0.2564, 0.2762])
-        train_loader, val_loader, test_loader = cifar100_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     elif args.dataset == 'cifar100':
+#         classes = 100
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.5071, 0.4865, 0.4409], std=[0.2673, 0.2564, 0.2762])
+#         train_loader, val_loader, test_loader = cifar100_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    elif args.dataset == 'tinyimagenet':
-        classes = 200
-        dataset_normalization = NormalizeByChannelMeanStd(
-            mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262])
-        train_loader, val_loader, test_loader = tiny_imagenet_dataloaders(batch_size = args.batch_size, data_dir = args.data)
+#     elif args.dataset == 'tinyimagenet':
+#         classes = 200
+#         dataset_normalization = NormalizeByChannelMeanStd(
+#             mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262])
+#         train_loader, val_loader, test_loader = tiny_imagenet_dataloaders(batch_size = args.batch_size, data_dir = args.data)
     
-    else:
-        raise ValueError("Unknown Dataset")
+#     else:
+#         raise ValueError("Unknown Dataset")
 
-    #prepare model
+#     #prepare model
 
-    if args.arch == 'resnet18':
-        model = ResNet18(num_classes = classes)
-        model.normalize = dataset_normalization
+#     if args.arch == 'resnet18':
+#         model = ResNet18(num_classes = classes)
+#         model.normalize = dataset_normalization
 
-    elif args.arch == 'wideresnet':
-        model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
-        model.normalize = dataset_normalization
+#     elif args.arch == 'wideresnet':
+#         model = WideResNet(args.depth_factor, classes, widen_factor=args.width_factor, dropRate=0.0)
+#         model.normalize = dataset_normalization
 
-    elif args.arch == 'vgg16':
-        model = vgg16_bn(num_classes = 10)
-        model.normalize = dataset_normalization
+#     elif args.arch == 'vgg16':
+#         model = vgg16_bn(num_classes = 10)
+#         model.normalize = dataset_normalization
 
-    else:
-        raise ValueError("Unknown Model")   
+#     else:
+#         raise ValueError("Unknown Model")   
     
-    return train_loader, val_loader, test_loader, model
+#     return train_loader, val_loader, test_loader, model
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
