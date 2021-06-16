@@ -44,7 +44,7 @@ parser.add_argument('--world-size', default=1)
 parser.add_argument('--rank', default=0)
 
 parser.add_argument('-p', '--print-freq', default=50, type=int, metavar='N', help='print frequency')
-parser.add_argument('--result-dir', default='../drive/MyDrive/lipnet/', type=str)
+parser.add_argument('--result-dir', default='../drive/Shareddrives/Harutya/lipnet/', type=str)
 parser.add_argument('--filter-name', default='', type=str)
 parser.add_argument('--seed', default=2020, type=int)
 parser.add_argument('--visualize', action='store_true')
