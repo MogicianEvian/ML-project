@@ -12,6 +12,8 @@ from adamw import AdamW
 from model.model import Model, set_eps, get_eps
 from model.norm_dist import set_p_norm, get_p_norm
 
+from utils_swa import moving_average, bn_update
+
 parser = argparse.ArgumentParser(description='Adversarial Robustness')
 parser.add_argument('--dataset', default='MNIST', type=str)
 parser.add_argument('--model', default='MLPFeature(depth=4,width=4)', type=str) #mlp,conv
@@ -47,6 +49,14 @@ parser.add_argument('--filter-name', default='', type=str)
 parser.add_argument('--seed', default=2020, type=int)
 parser.add_argument('--visualize', action='store_true')
 
+parser.add_argument('--swa', action='store_true', help='swa usage flag (default: off)')
+parser.add_argument('--swa_start', type=int, default=55, metavar='N', 
+                    help='SWA start epoch number (default: 55)')
+parser.add_argument('--swa_c_epochs', type=int, default=1, metavar='N', 
+                    help='SWA model collection frequency/cycle length in epochs (default: 1)')
+
+
+
 def cal_acc(outputs, targets):
     predicted = torch.max(outputs.data, 1)[1]
     return (predicted == targets).float().mean()
@@ -57,7 +67,7 @@ def parallel_reduce(*argv):
     ret = tensor.cpu() / torch.distributed.get_world_size()
     return ret.tolist()
 
-def train(net, loss_fun, epoch, trainloader, optimizer, schedule, logger, train_logger, gpu, parallel, print_freq):
+def train(net, loss_fun, epoch, trainloader, optimizer, schedule, logger, train_logger, gpu, parallel, print_freq, args):
     if logger is not None:
         logger.print('Epoch %d training start' % (epoch))
     net.train()
@@ -70,6 +80,7 @@ def train(net, loss_fun, epoch, trainloader, optimizer, schedule, logger, train_
         data_time.update(time.time() - start)
         inputs = inputs.cuda(gpu, non_blocking=True)
         targets = targets.cuda(gpu, non_blocking=True)
+
         outputs, worse_outputs = net(inputs, targets=targets)
         loss = loss_fun(outputs, worse_outputs, targets)
         with torch.no_grad():
@@ -105,7 +116,7 @@ def train(net, loss_fun, epoch, trainloader, optimizer, schedule, logger, train_
     return loss, acc
 
 @torch.no_grad()
-def test(net, loss_fun, epoch, testloader, logger, test_logger, gpu, parallel, print_freq):
+def test(net, loss_fun, epoch, testloader, logger, test_logger, gpu, parallel, print_freq, args):
     net.eval()
     batch_time, data_time, losses, accs = [AverageMeter() for _ in range(4)]
     start = time.time()
@@ -290,6 +301,19 @@ def main_worker(gpu, parallel, args, result_dir):
     if parallel:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
+    # swa
+    swa_model = None
+    if args.swa:
+        if args.predictor_hidden_size > 0:
+            swa_model = locals()[model_name](input_dim=input_dim[args.dataset], **params)
+            predictor = Predictor(model.out_features, args.predictor_hidden_size, num_classes)
+        else:
+            swa_model = locals()[model_name](input_dim=input_dim[args.dataset], num_classes=num_classes, **params)
+            predictor = BoundFinalIdentity()
+        swa_model = Model(swa_model, predictor, eps=0)
+        swa_model = swa_model.cuda(gpu)
+        swa_n = 0
+
     loss_name, params = parse_function_call(args.loss)
     loss = Loss(globals()[loss_name](**params), args.kappa)
 
@@ -323,6 +347,10 @@ def main_worker(gpu, parallel, args, result_dir):
             state_dict = new_state_dict
         model.load_state_dict(state_dict)
         optimizer.load_state_dict(checkpoint['optimizer'])
+
+        if args.swa:
+            swa_model.load_state_dict(checkpoint['swa_dict'])
+
         print("=> loaded '{}'".format(args.checkpoint))
         if parallel:
             torch.distributed.barrier()
@@ -348,8 +376,15 @@ def main_worker(gpu, parallel, args, result_dir):
         if parallel:
             train_loader.sampler.set_epoch(epoch)
         train_loss, train_acc = train(model, loss, epoch, train_loader, optimizer, schedule,
-                                      logger, train_logger, gpu, parallel, args.print_freq)
-        test_loss, test_acc = test(model, loss, epoch, test_loader, logger, test_logger, gpu, parallel, args.print_freq)
+                                      logger, train_logger, gpu, parallel, args.print_freq, args)
+        test_loss, test_acc = test(model, loss, epoch, test_loader, logger, test_logger, gpu, parallel, args.print_freq, args)
+
+        if args.swa and epoch >= args.swa_start and (epoch - args.swa_start) % args.swa_c_epochs == 0:
+            # SWA
+            moving_average(swa_model, model, 1.0 / (swa_n + 1))
+            swa_n += 1
+            bn_update(train_loader, swa_model)
+
         if writer is not None:
             writer.add_scalar('curve/p', get_p_norm(model), epoch)
             writer.add_scalar('curve/train loss', train_loss, epoch)
@@ -373,12 +408,20 @@ def main_worker(gpu, parallel, args, result_dir):
                 logger.print("Generate adversarial examples on test dataset")
             gen_adv_examples(model, attacker, test_loader, gpu, parallel, logger)
             certified_test(model, args.eps_test, up, down, epoch, test_loader, logger, gpu, parallel)
+            
         if epoch % 10 == 9:
             #on colab
-            torch.save({
-                'state_dict': model.state_dict(),
-                'optimizer' : optimizer.state_dict(),
-            }, os.path.join(result_dir, 'model.pth'))
+            if args.swa:
+                torch.save({
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict(),
+                    'swa_dict': swa_model.state_dict(),
+                }, os.path.join(result_dir, 'model.pth'))
+            else:
+                torch.save({
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict(),
+                }, os.path.join(result_dir, 'model.pth'))
 
     schedule(args.epochs[-1], 0)
     if output_flag:
