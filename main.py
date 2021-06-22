@@ -432,10 +432,17 @@ def main_worker(gpu, parallel, args, result_dir):
     certified_test(model, args.eps_test, up, down, args.epochs[-1], test_loader, logger, gpu, parallel)
 
     if output_flag:
-        torch.save({
-            'state_dict': model.state_dict(),
-            'optimizer' : optimizer.state_dict(),
-        }, os.path.join(result_dir, 'model.pth'))
+        if args.swa:
+            torch.save({
+                'state_dict': model.state_dict(),
+                'optimizer' : optimizer.state_dict(),
+                'swa_dict': swa_model.state_dict(),
+            }, os.path.join(result_dir, 'model.pth'))
+        else:
+            torch.save({
+                'state_dict': model.state_dict(),
+                'optimizer' : optimizer.state_dict(),
+            }, os.path.join(result_dir, 'model.pth'))
     if writer is not None:
         writer.close()
 
