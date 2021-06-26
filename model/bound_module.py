@@ -72,8 +72,8 @@ class BoundFinalLinear(nn.Linear):
 class BoundConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True):
-        super(BoundConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True)
+        super(BoundConv2d, self).__init__(self.in_channels, self.out_channels, self.kernel_size, stride=self.stride,
+                 padding=self.padding, dilation=1, groups=1, bias=True)
         self.weight.data.normal_()
         if self.bias is not None:
             self.bias.data.zero_()
@@ -83,8 +83,8 @@ class BoundConv2d(nn.Conv2d):
 
         c = (lower + upper) / 2.
         r = (upper - lower) / 2.
-        c = F.Conv2d(c, self.weight, bias=self.bias, stride=self.stride, pad=self.pad)
-        r = F.Conv2d(r, abs(self.weight), bias=None, stride=self.stride, pad=self.pad)
+        c = F.conv2d(c, self.weight, bias=self.bias, stride=self.stride, padding=self.padding)
+        r = F.conv2d(r, abs(self.weight), bias=None, stride=self.stride, padding=self.padding)
         lower = c - r
         upper = c + r
         return y, lower, upper
@@ -205,7 +205,7 @@ class Predictor(nn.Module):
         # print(ret)
         # print(ret[0])
         # ret[0] = ret[0].view(ret[0].size(0), 3, 32, 32)
-        ret = ret[0].view(ret[0].size(0), 3, 32, 32), ret[1], ret[2]
+        ret = ret[0].view(ret[0].size(0), 3, 32, 32), ret[1].view(ret[1].size(0), 3, 32, 32), ret[2].view(ret[2].size(0), 3, 32, 32)
         # print(ret)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
@@ -216,7 +216,7 @@ class Predictor(nn.Module):
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
         # ret[0] = ret[0].view(ret[0].size(0), -1)
-        ret = ret[0].view(ret[0].size(0),-1), ret[1], ret[2]
+        ret = ret[0].view(ret[0].size(0),-1), ret[1].view(ret[1].size(0),-1), ret[2].view(ret[2].size(0),-1)
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)
