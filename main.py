@@ -288,7 +288,7 @@ def main_worker(gpu, parallel, args, result_dir):
 
     from model.bound_module import Predictor, BoundFinalIdentity
     from model.mlp import MLPFeature, MLP
-    from model.conv import ConvFeature, Conv
+    from model.conv import ConvFeature, Conv, ConvMine
     model_name, params = parse_function_call(args.model)
 
     # swa
