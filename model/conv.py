@@ -55,7 +55,7 @@ class ConvFeature(nn.Module):
 
 class ConvMine(nn.Module):
     def __init__(self, width, input_dim, hidden=512):
-        super(ConvFeature, self).__init__()
+        super(ConvMine, self).__init__()
         pixels = input_dim[1] * input_dim[2]
         width *= net_width
         conv = []
