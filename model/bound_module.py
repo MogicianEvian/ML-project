@@ -83,8 +83,8 @@ class BoundConv2d(nn.Conv2d):
 
         c = (lower + upper) / 2.
         r = (upper - lower) / 2.
-        c = F.convolution_2d(c, self.weight, bias=self.bias, stride=self.stride, pad=self.pad)
-        r = F.convolution_2d(r, abs(self.weight), bias=None, stride=self.stride, pad=self.pad)
+        c = F.Conv2d(c, self.weight, bias=self.bias, stride=self.stride, pad=self.pad)
+        r = F.Conv2d(r, abs(self.weight), bias=None, stride=self.stride, pad=self.pad)
         lower = c - r
         upper = c + r
         return y, lower, upper
@@ -199,12 +199,13 @@ class Predictor(nn.Module):
         self.fc7 = BoundFinalLinear(hidden, out_dim)
 
     def forward(self, x, lower=None, upper=None, targets=None):
-        ret = [x, lower, upper]
+        ret = x, lower, upper
         ret = self.fc0(*ret)
         ret = self.fc1(*ret)
         # print(ret)
         # print(ret[0])
-        ret[0] = ret[0].view(ret[0].size(0), 3, 32, 32)
+        # ret[0] = ret[0].view(ret[0].size(0), 3, 32, 32)
+        ret = ret[0].view(ret[0].size(0), 3, 32, 32), ret[1], ret[2]
         # print(ret)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
@@ -214,7 +215,8 @@ class Predictor(nn.Module):
         ret = self.fc4(*ret)
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
-        ret[0] = ret[0].view(ret[0].size(0), -1)
+        # ret[0] = ret[0].view(ret[0].size(0), -1)
+        ret = ret[0].view(ret[0].size(0),-1), ret[1], ret[2]
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)
