@@ -201,6 +201,7 @@ class Predictor(nn.Module):
         ret = x, lower, upper
         ret = self.fc0(*ret)
         ret = self.fc1(*ret)
+        print(ret)
         ret[0].view(3,32,32)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
