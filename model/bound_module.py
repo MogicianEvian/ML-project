@@ -185,15 +185,13 @@ class BoundFinalIdentity(nn.Module):
 class Predictor(nn.Module):
     def __init__(self, in_features, hidden, out_dim):
         super(Predictor, self).__init__()
-        self.fc0 = BoundLinear(in_features, 3*32*32, bias = True)
-        self.fc1 = BoundTanh()
-        self.conv1 = BoundConv2d(3, 32, 3, stride = 1, padding = 1)
+        self.conv1 = BoundConv2d(in_features//256, 32, 3, stride = 1, padding = 1)
         self.fc2 = BoundReLU()
         self.conv2 = BoundConv2d(32, 32, 4, stride = 2, padding = 1)
         self.fc3 = BoundReLU()
         self.conv3 = BoundConv2d(32, 64, 3, stride = 1, padding = 1)
         self.fc4 = BoundReLU()
-        self.conv4 = BoundConv2d(64, 64, 4, stride = 2, padding = 1)
+        self.conv4 = BoundConv2d(64, 64, 4, stride = 1, padding = 1)
         self.fc5 = BoundReLU()
         self.fc6 = BoundLinear(64*8*8, hidden, bias=True)
         self.tanh = BoundTanh()
@@ -201,13 +199,7 @@ class Predictor(nn.Module):
 
     def forward(self, x, lower=None, upper=None, targets=None):
         ret = x, lower, upper
-        ret = self.fc0(*ret)
-        ret = self.fc1(*ret)
-        # print(ret)
-        # print(ret[0])
-        # ret[0] = ret[0].view(ret[0].size(0), 3, 32, 32)
-        ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
-        # print(ret)
+        # ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
         ret = self.conv2(*ret)
@@ -217,7 +209,7 @@ class Predictor(nn.Module):
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
         # ret[0] = ret[0].view(ret[0].size(0), -1)
-        ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
+        # ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)

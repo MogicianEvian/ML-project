@@ -52,3 +52,24 @@ class ConvFeature(nn.Module):
         paras = [None if y is None else y.view(y.size(0), -1) for y in paras]
         paras = self.fc(*paras)
         return paras
+
+class ConvMine(nn.Module):
+    def __init__(self, width, input_dim, hidden=512):
+        super(ConvFeature, self).__init__()
+        pixels = input_dim[1] * input_dim[2]
+        width *= net_width
+        conv = []
+        conv.append(NormDistConv(input_dim[0], width, 3, bias=False, mean_normalize=True, padding=1))
+        conv.append(NormDistConv(width, width, 3, bias=False, mean_normalize=True, padding=1))
+        pixels //= 4
+        width *= 2
+        conv.append(NormDistConv(width // 2, width, 3, bias=False, padding=1, stride=2, mean_normalize=True))
+        conv.append(NormDistConv(width, width, 3, bias=False, padding=1, mean_normalize=True))
+        conv.append(NormDistConv(width, width, 3, bias=False, padding=1, mean_normalize=True))
+        self.conv = nn.ModuleList(conv)
+        self.out_features = width*pixels
+    def forward(self, x, lower=None, upper=None):
+        paras = (x, lower, upper)
+        for layer in self.conv:
+            paras = layer(*paras)
+        return paras
