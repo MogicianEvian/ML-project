@@ -199,7 +199,7 @@ class Predictor(nn.Module):
         self.fc7 = BoundFinalLinear(hidden, out_dim)
 
     def forward(self, x, lower=None, upper=None, targets=None):
-        ret = x, lower, upper
+        ret = [x, lower, upper]
         ret = self.fc0(*ret)
         ret = self.fc1(*ret)
         # print(ret)
