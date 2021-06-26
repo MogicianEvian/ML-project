@@ -201,7 +201,7 @@ class Predictor(nn.Module):
         ret = x, lower, upper
         ret = self.fc0(*ret)
         ret = self.fc1(*ret)
-        ret.x.view(3,32,32)
+        ret[0].view(3,32,32)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
         ret = self.conv2(*ret)
@@ -210,7 +210,7 @@ class Predictor(nn.Module):
         ret = self.fc4(*ret)
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
-        ret.x.view(ret.x.size(0), -1)
+        ret[0].view(ret.x.size(0), -1)
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)
