@@ -80,7 +80,8 @@ class BoundConv2d(nn.Conv2d):
 
     def forward(self, x, lower=None, upper=None):
         y = super(BoundConv2d, self).forward(x)
-
+        if lower is None or upper is None:
+            return y, None, None
         c = (lower + upper) / 2.
         r = (upper - lower) / 2.
         c = F.conv2d(c, self.weight, bias=self.bias, stride=self.stride, padding=self.padding)
@@ -205,7 +206,7 @@ class Predictor(nn.Module):
         # print(ret)
         # print(ret[0])
         # ret[0] = ret[0].view(ret[0].size(0), 3, 32, 32)
-        ret = ret[0].view(ret[0].size(0), 3, 32, 32), ret[1].view(ret[1].size(0), 3, 32, 32), ret[2].view(ret[2].size(0), 3, 32, 32)
+        ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
         # print(ret)
         ret = self.conv1(*ret)
         ret = self.fc2(*ret)
@@ -216,7 +217,7 @@ class Predictor(nn.Module):
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
         # ret[0] = ret[0].view(ret[0].size(0), -1)
-        ret = ret[0].view(ret[0].size(0),-1), ret[1].view(ret[1].size(0),-1), ret[2].view(ret[2].size(0),-1)
+        ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)
