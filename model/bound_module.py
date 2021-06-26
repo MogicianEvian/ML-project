@@ -71,61 +71,21 @@ class BoundFinalLinear(nn.Linear):
 
 class BoundConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
+                 padding=0, dilation=1, groups=1, bias=False):
         super(BoundConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=stride,
-                 padding=padding, dilation=1, groups=1, bias=True)
-        self.weight.data.normal_()
-        if self.bias is not None:
-            self.bias.data.zero_()
+                 padding=padding, dilation=1, groups=1, bias=False)
 
     def forward(self, x, lower=None, upper=None):
         y = super(BoundConv2d, self).forward(x)
         if lower is None or upper is None:
             return y, None, None
-        c = (lower + upper) / 2.
-        r = (upper - lower) / 2.
+        c = (lower + upper) / 2.0
+        r = (upper - lower) / 2.0
         c = F.conv2d(c, self.weight, bias=self.bias, stride=self.stride, padding=self.padding)
-        r = F.conv2d(r, abs(self.weight), bias=None, stride=self.stride, padding=self.padding)
+        r = F.conv2d(r, self.weight.abs(), bias=None, stride=self.stride, padding=self.padding)
         lower = c - r
         upper = c + r
         return y, lower, upper
-
-# class RobustConv2d(nn.Module):
-#     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-#                  padding=0, dilation=1, groups=1, bias=True, non_negative = True):
-#         super(RobustConv2d, self).__init__()
-#         if non_negative:
-#             self.weight = Parameter(torch.rand(out_channels, in_channels//groups, kernel_size, kernel_size) * 1/math.sqrt(kernel_size * kernel_size * in_channels//groups))
-#         else:
-#             self.weight = Parameter(torch.randn(out_channels, in_channels//groups, kernel_size, kernel_size) * 1/math.sqrt(kernel_size * kernel_size * in_channels//groups))
-#         if bias:
-#             self.bias = Parameter(torch.zeros(out_channels))
-#         else:
-#             self.bias = None
-#         self.stride = stride
-#         self.padding = padding
-#         self.dilation = dilation
-#         self.groups = 1
-#         self.non_negative = non_negative
-
-#     def forward(self, input):
-#         input_p = input[:input.shape[0]//2]
-#         input_n = input[input.shape[0]//2:]
-#         if self.non_negative:
-#             out_p = F.conv2d(input_p, F.relu(self.weight), self.bias, self.stride,
-#                         self.padding, self.dilation, self.groups)
-#             out_n = F.conv2d(input_n, F.relu(self.weight), self.bias, self.stride,
-#                         self.padding, self.dilation, self.groups)
-#             return torch.cat([out_p, out_n],0)
-            
-#         u = (input_p + input_n)/2
-#         r = (input_p - input_n)/2
-#         out_u = F.conv2d(u, self.weight,self.bias, self.stride,
-#                         self.padding, self.dilation, self.groups)
-#         out_r = F.conv2d(r, torch.abs(self.weight), None, self.stride,
-#                         self.padding, self.dilation, self.groups)
-#         return torch.cat([out_u + out_r, out_u - out_r], 0)
-    
 
 # class BounConv2d(nn.Conv2d):
 #     def __init__(self, in_features, out_features, bias=True, w_scale=1.0, b_scale=1.0):
@@ -185,34 +145,30 @@ class BoundFinalIdentity(nn.Module):
 class Predictor(nn.Module):
     def __init__(self, in_features, hidden, out_dim):
         super(Predictor, self).__init__()
-        self.conv1 = BoundConv2d(in_features//256, 32, 3, stride = 1, padding = 1)
+        self.conv1 = BoundConv2d(in_features//256, 256, 3, stride = 1, padding = 1)
+        self.fc1 = BoundReLU()
+        self.conv2 = BoundConv2d(256, 256, 3, stride = 1, padding = 1)
         self.fc2 = BoundReLU()
-        self.conv2 = BoundConv2d(32, 32, 4, stride = 2, padding = 1)
+        self.conv3 = BoundConv2d(256, 512, 4, stride = 2, padding = 1)
         self.fc3 = BoundReLU()
-        self.conv3 = BoundConv2d(32, 64, 3, stride = 1, padding = 1)
-        self.fc4 = BoundReLU()
-        self.conv4 = BoundConv2d(64, 64, 4, stride = 1, padding = 1)
+        self.fc4 = BoundLinear(512*8*8, hidden, bias=True)
         self.fc5 = BoundReLU()
-        self.fc6 = BoundLinear(64*8*8, hidden, bias=True)
-        self.tanh = BoundTanh()
-        self.fc7 = BoundFinalLinear(hidden, out_dim)
+        self.fc6 = BoundFinalLinear(hidden, out_dim)
 
     def forward(self, x, lower=None, upper=None, targets=None):
         ret = x, lower, upper
         # ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
         ret = self.conv1(*ret)
-        ret = self.fc2(*ret)
+        ret = self.fc1(*ret)
         ret = self.conv2(*ret)
-        ret = self.fc3(*ret)
+        ret = self.fc2(*ret)
         ret = self.conv3(*ret)
-        ret = self.fc4(*ret)
-        ret = self.conv4(*ret)
-        ret = self.fc5(*ret)
+        ret = self.fc3(*ret)
         # ret[0] = ret[0].view(ret[0].size(0), -1)
         ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
-        ret = self.fc6(*ret)
-        ret = self.tanh(*ret)
-        ret = self.fc7(*ret, targets=targets)
+        ret = self.fc4(*ret)
+        ret = self.fc5(*ret)
+        ret = self.fc6(*ret, targets=targets)
         return ret
 
     # nn.Conv2d(in_ch, 4*width, 3, stride=1, padding=1),
