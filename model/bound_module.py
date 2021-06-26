@@ -70,9 +70,9 @@ class BoundFinalLinear(nn.Linear):
 
 
 class BoundConv2d(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super(BoundConv2d, self).__init__(
-            *args, **kwargs)
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, groups=1, bias=True):
+        super(RobustConv2d, self).__init__()
         self.weight.data.normal_()
         if self.bias is not None:
             self.bias.data.zero_()
