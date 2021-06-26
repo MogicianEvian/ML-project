@@ -209,7 +209,7 @@ class Predictor(nn.Module):
         ret = self.conv4(*ret)
         ret = self.fc5(*ret)
         # ret[0] = ret[0].view(ret[0].size(0), -1)
-        # ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
+        ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
         ret = self.fc6(*ret)
         ret = self.tanh(*ret)
         ret = self.fc7(*ret, targets=targets)
