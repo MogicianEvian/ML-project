@@ -55,9 +55,9 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     ]
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
-    Dataset = globals()[dataset]
-    train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
-    test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
+    dataset = globals()[dataset]
+    train_dataset = dataset(root=datadir, train=True, download=True, transform=train_transform)
+    test_dataset = dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
         import numpy
         ddpm_data = numpy.load('./data/cifar10_ddpm.npz')
