@@ -53,12 +53,11 @@ class DDPM_Dataset(torch.utils.data.Dataset):
         self.dataset = dataset
         self.classes = classes
         self.transform = transform
-        self.indexes = [i for i in range(len(dataset))]
     def __getattr__(self, item):
         return getattr(self.dataset, item)
     def __getitem__(self, index):
-        item = self.dataset[self.indexes[index]]
-        return item[0], self.classes.index(item[1])
+        item = self.dataset[index]
+        return item
     def __len__(self):
         return len(self.indexes)
 
