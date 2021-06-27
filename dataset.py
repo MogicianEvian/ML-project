@@ -75,7 +75,14 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     if ddpm is True:
         import numpy
         ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
-        ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']),torch.from_numpy(ddpm_dataset['label']))
+        a = ddpm_dataset['image']
+        c = numpy.zeros(a.size(0),3,32,32)
+        for i in range(a.size(0)):
+            for j in range(32):
+                for k in range(32):
+                    for l in range(3):
+                        c[i][l][j][k] = a[i][j][k][l]
+        ddpm_dataset = TensorDataset(c, torch.from_numpy(ddpm_dataset['label']))
         train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
         print('ddpm_load')
     if classes is not None:
