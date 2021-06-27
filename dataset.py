@@ -59,7 +59,7 @@ class DDPM_Dataset(torch.utils.data.Dataset):
         item = self.dataset[index]
         return item
     def __len__(self):
-        return len(self.indexes)
+        return len(self.dataset)
 
 
 def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
