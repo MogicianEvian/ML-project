@@ -49,9 +49,10 @@ class TruncateDataset(torch.utils.data.Dataset):
         return len(self.indexes)
 
 class DDPM_Dataset(torch.utils.data.Dataset):
-    def __init__(self, dataset, classes):
+    def __init__(self, dataset, classes, transform):
         self.dataset = dataset
         self.classes = classes
+        self.transform = transform
         self.indexes = [i for i in range(len(dataset))]
     def __getattr__(self, item):
         return getattr(self.dataset, item)
@@ -76,7 +77,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
         import numpy
         ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
         ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']),torch.from_numpy(ddpm_dataset['label']))
-        train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes)
+        train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
         print('ddpm_load')
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)
