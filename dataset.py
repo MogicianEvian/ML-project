@@ -59,6 +59,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
+        import numpy
         ddpm_data = numpy.load('./data/cifar10_ddpm.npz')
         ddpm_dataset = Dataset(ddpm_data['image'],ddpm_data['label'])
         train_dataset = ConcatDataset(train_dataset, ddpm_dataset)
