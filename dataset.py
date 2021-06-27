@@ -76,7 +76,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
         import numpy
         ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
         a = ddpm_dataset['image']
-        c = numpy.zeros(a.shape[0],3,32,32)
+        c = numpy.zeros([a.shape[0],3,32,32], dtype = a.dtype)
         for i in range(a.shape[0]):
             for j in range(32):
                 for k in range(32):
