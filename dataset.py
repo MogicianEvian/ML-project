@@ -67,6 +67,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)
         test_dataset = TruncateDataset(test_dataset, classes)
+        print('ha')
     return train_dataset, test_dataset
 
 def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None, ddpm=False):
