@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10, CIFAR100, MNIST, FashionMNIST
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
 
 mean = {
@@ -55,13 +55,13 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     ]
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
-    dataset = globals()[dataset]
-    train_dataset = dataset(root=datadir, train=True, download=True, transform=train_transform)
-    test_dataset = dataset(root=datadir, train=False, download=True, transform=test_transform)
+    Dataset = globals()[dataset]
+    train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
+    test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
         import numpy
         ddpm_data = numpy.load('./data/cifar10_ddpm.npz')
-        ddpm_dataset = Dataset(ddpm_data['image'],ddpm_data['label'])
+        ddpm_dataset = TensorDataset(ddpm_data['image'],ddpm_data['label'])
         train_dataset = ConcatDataset(train_dataset, ddpm_dataset)
         print('ddpm_load')
     if classes is not None:
