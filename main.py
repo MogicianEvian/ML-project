@@ -54,8 +54,8 @@ parser.add_argument('--swa_start', type=int, default=55, metavar='N',
                     help='SWA start epoch number (default: 55)')
 parser.add_argument('--swa_c_epochs', type=int, default=1, metavar='N', 
                     help='SWA model collection frequency/cycle length in epochs (default: 1)')
-
-
+parser.add_argument('--ddpm', action='store_true', help='ddpm data usage flag (default: off)')
+# path: ./data/cifar10_ddpm.npz
 
 def cal_acc(outputs, targets):
     predicted = torch.max(outputs.data, 1)[1]
@@ -282,7 +282,7 @@ def main_worker(gpu, parallel, args, result_dir):
     assert args.batch_size % args.world_size == 0
     from dataset import load_data, get_statistics, default_eps, input_dim
     train_loader, test_loader = load_data(args.dataset, 'data/', args.batch_size // args.world_size, parallel,
-                                          augmentation=True, classes=None)
+                                          augmentation=True, classes=None, ddpm=args.ddpm)
     mean, std = get_statistics(args.dataset)
     num_classes = len(train_loader.dataset.classes)
 

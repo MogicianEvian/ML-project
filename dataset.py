@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10, CIFAR100, MNIST, FashionMNIST
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torch.utils.data.distributed import DistributedSampler
 
 mean = {
@@ -48,7 +48,7 @@ class TruncateDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.indexes)
 
-def get_dataset(dataset, datadir, augmentation=True, classes=None):
+def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     default_transform = [
         transforms.ToTensor(),
         transforms.Normalize(mean[dataset], [std[dataset]] * len(mean[dataset]))
@@ -58,13 +58,17 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None):
     Dataset = globals()[dataset]
     train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
+    if ddpm is True:
+        ddpm_data = numpy.load('./data/cifar10_ddpm.npz')
+        ddpm_dataset = Dataset(ddpm_data['image'],ddpm_data['label'])
+        train_dataset = ConcatDataset(train_dataset, ddpm_dataset)
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)
         test_dataset = TruncateDataset(test_dataset, classes)
     return train_dataset, test_dataset
 
-def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None):
-    train_dataset, test_dataset = get_dataset(dataset, datadir, augmentation=augmentation, classes=classes)
+def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None, ddpm=False):
+    train_dataset, test_dataset = get_dataset(dataset, datadir, augmentation=augmentation, classes=classes, ddpm=ddpm)
     train_sampler = DistributedSampler(train_dataset, shuffle=True) if parallel else None
     trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=(train_sampler is None),
                              num_workers=workers, sampler=train_sampler, pin_memory=True)
