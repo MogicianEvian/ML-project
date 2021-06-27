@@ -284,7 +284,6 @@ def main_worker(gpu, parallel, args, result_dir):
     train_loader, test_loader = load_data(args.dataset, 'data/', args.batch_size // args.world_size, parallel,
                                           augmentation=True, classes=None, ddpm=args.ddpm)
     mean, std = get_statistics(args.dataset)
-    print(type(train_loader.dataset))
     num_classes = len(train_loader.dataset.classes)
 
     from model.bound_module import Predictor, BoundFinalIdentity

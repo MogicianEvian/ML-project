@@ -48,6 +48,20 @@ class TruncateDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.indexes)
 
+class DDPM_Dataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, classes):
+        self.dataset = dataset
+        self.classes = classes
+        self.indexes = [i for i in range(len(dataset))]
+    def __getattr__(self, item):
+        return getattr(self.dataset, item)
+    def __getitem__(self, index):
+        item = self.dataset[self.indexes[index]]
+        return item[0], self.classes.index(item[1])
+    def __len__(self):
+        return len(self.indexes)
+
+
 def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     default_transform = [
         transforms.ToTensor(),
@@ -60,14 +74,13 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
         import numpy
-        # ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
-        # ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']),torch.from_numpy(ddpm_dataset['label']))
-        # train_dataset = ConcatDataset([train_dataset, ddpm_dataset])
+        ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
+        ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']),torch.from_numpy(ddpm_dataset['label']))
+        train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes)
         print('ddpm_load')
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)
         test_dataset = TruncateDataset(test_dataset, classes)
-        print('ha')
     return train_dataset, test_dataset
 
 def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None, ddpm=False):
