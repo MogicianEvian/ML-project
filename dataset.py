@@ -62,6 +62,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
         ddpm_data = numpy.load('./data/cifar10_ddpm.npz')
         ddpm_dataset = Dataset(ddpm_data['image'],ddpm_data['label'])
         train_dataset = ConcatDataset(train_dataset, ddpm_dataset)
+        print('ddpm_load')
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)
         test_dataset = TruncateDataset(test_dataset, classes)
