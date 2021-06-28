@@ -412,18 +412,18 @@ def main_worker(gpu, parallel, args, result_dir):
             gen_adv_examples(model, attacker, test_loader, gpu, parallel, logger)
             certified_test(model, args.eps_test, up, down, epoch, test_loader, logger, gpu, parallel)
             
-        if epoch % 10 == 9:
+#         if epoch % 10 == 9:
             #on colab
-            if args.swa:
-                torch.save({
-                    'state_dict': model.state_dict(),
-                    'optimizer' : optimizer.state_dict(),
-                    'swa_dict': swa_model.state_dict(),
-                }, os.path.join(result_dir, 'model.pth'))
-            else:
-                torch.save({
-                    'state_dict': model.state_dict(),
-                    'optimizer' : optimizer.state_dict(),
+        if args.swa:
+            torch.save({
+                'state_dict': model.state_dict(),
+                'optimizer' : optimizer.state_dict(),
+                'swa_dict': swa_model.state_dict(),
+            }, os.path.join(result_dir, 'model.pth'))
+        else:
+            torch.save({
+                'state_dict': model.state_dict(),
+                'optimizer' : optimizer.state_dict(),
                 }, os.path.join(result_dir, 'model.pth'))
 
     schedule(args.epochs[-1], 0)
