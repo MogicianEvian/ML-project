@@ -66,7 +66,7 @@ class DDPMDataset(torch.utils.data.Dataset):
     image = self.transform(image)
     return image, label
   def __len__(self):
-    return len(self.cifar)+len(self.ddpm)
+    return len(self.cifar)+len(self.ddpm_images)
 
 
 def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
