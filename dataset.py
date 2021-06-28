@@ -59,7 +59,7 @@ class DDPM_Dataset(torch.utils.data.Dataset):
         item = self.dataset[index]
         import numpy as np
         from PIL import Image
-        if item[0].dtype == torch.float32:
+        if index < 50000:
             return item
         arr = np.ascontiguousarray(item[0].numpy().transpose(1,2,0))
         img = Image.fromarray(arr, 'RGB')
