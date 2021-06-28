@@ -177,7 +177,7 @@ class Predictor(nn.Module):
     #     ret = self.fc5(*ret, targets=targets)
     #     return ret
 
-     def __init__(self, in_features, hidden, out_dim):
+    def __init__(self, in_features, hidden, out_dim):
         super(Predictor, self).__init__()
         self.fc1 = BoundLinear(in_features, hidden, bias=True)
         self.tanh = BoundTanh()
