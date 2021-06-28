@@ -82,7 +82,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
                 for k in range(32):
                     for l in range(3):
                         c[i][l][j][k] = a[i][j][k][l]
-        ddpm_dataset = TensorDataset(c, torch.from_numpy(ddpm_dataset['label']))
+        ddpm_dataset = TensorDataset(torch.from_numpy(c), torch.from_numpy(ddpm_dataset['label']))
         train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
         print('ddpm_load')
     if classes is not None:
