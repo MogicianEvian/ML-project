@@ -49,24 +49,22 @@ class TruncateDataset(torch.utils.data.Dataset):
         return len(self.indexes)
 
 class DDPM_Dataset(torch.utils.data.Dataset):
-    def __init__(self, dataset, classes, transform):
-        self.dataset = dataset
+    def __init__(self, images, labels, classes, transform):
+        self.images = images
+        self.labels = labels
         self.classes = classes
         self.transform = transform
-    def __getattr__(self, item):
-        return getattr(self.dataset, item)
     def __getitem__(self, index):
-        item = self.dataset[index]
+        image = self.images[index]
+        label = self.labels[index]
         import numpy as np
         from PIL import Image
-        if index < 50000:
-            return self.transform(item[0]), item[1]
-        arr = np.ascontiguousarray(item[0].numpy().transpose(1,2,0))
+        arr = np.ascontiguousarray(image.numpy().transpose(1,2,0))
         img = Image.fromarray(arr, 'RGB')
         img = self.transform(img)
-        return img, item[1]
+        return img, label
     def __len__(self):
-        return len(self.dataset)
+        return len(self.labels)
 
 
 def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
@@ -77,13 +75,15 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
     Dataset = globals()[dataset]
-    train_dataset = Dataset(root=datadir, train=True, download=True)
+    train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
         import numpy
         ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
-        ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']), torch.from_numpy(ddpm_dataset['label']))
-        train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
+        ddpm_dataset = DDPM_Dataset(torch.from_numpy(ddpm_dataset['image']), torch.from_numpy(ddpm_dataset['label']), train_dataset.classes, train_transform)
+        # ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']), torch.from_numpy(ddpm_dataset['label']))
+        # train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
+        train_dataset = ConcatDataset([train_dataset, ddpm_dataset])
         print('ddpm_load')
     if classes is not None:
         train_dataset = TruncateDataset(train_dataset, classes)

@@ -284,7 +284,8 @@ def main_worker(gpu, parallel, args, result_dir):
     train_loader, test_loader = load_data(args.dataset, 'data/', args.batch_size // args.world_size, parallel,
                                           augmentation=True, classes=None, ddpm=args.ddpm)
     mean, std = get_statistics(args.dataset)
-    num_classes = len(train_loader.dataset.classes)
+    num_classes = 10
+    # num_classes = len(train_loader.dataset.classes)
 
     from model.bound_module import Predictor, BoundFinalIdentity
     from model.mlp import MLPFeature, MLP
@@ -324,7 +325,7 @@ def main_worker(gpu, parallel, args, result_dir):
         logger = Logger(os.path.join(result_dir, 'log.txt'))
         for arg in vars(args):
             logger.print(arg, '=', getattr(args, arg))
-        logger.print(train_loader.dataset.transform)
+        # logger.print(train_loader.dataset.transform)
         logger.print(model)
         logger.print('number of params: ', sum([p.numel() for p in model.parameters()]))
         logger.print('Using loss', loss)
