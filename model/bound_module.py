@@ -143,63 +143,48 @@ class BoundFinalIdentity(nn.Module):
         return x, res
 
 class Predictor(nn.Module):
-    def __init__(self, in_features, hidden, out_dim):
-        super(Predictor, self).__init__()
-        self.conv1 = BoundConv2d(in_features//256, 256, 3, stride = 1, padding = 1)
-        self.fc1 = BoundReLU()
-        self.norm1 = BoundMeanNorm(256)
-        self.conv2 = BoundConv2d(256, 256, 3, stride = 1, padding = 1)
-        self.fc2 = BoundReLU()
-        self.norm2 = BoundMeanNorm(256)
-        self.conv3 = BoundConv2d(256, 512, 4, stride = 2, padding = 1)
-        self.fc3 = BoundReLU()
-        self.norm3 = BoundMeanNorm(512)
-        self.fc4 = BoundLinear(512*8*8, hidden, bias=True)
-        self.tanh = BoundTanh()
-        self.fc5 = BoundFinalLinear(hidden, out_dim)
-
-    def forward(self, x, lower=None, upper=None, targets=None):
-        ret = x, lower, upper
-        # ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
-        ret = self.conv1(*ret)
-        ret = self.fc1(*ret)
-        ret = self.norm1(*ret)
-        ret = self.conv2(*ret)
-        ret = self.fc2(*ret)
-        ret = self.norm2(*ret)
-        ret = self.conv3(*ret)
-        ret = self.fc3(*ret)
-        ret = self.norm3(*ret)
-        # ret[0] = ret[0].view(ret[0].size(0), -1)
-        ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
-        ret = self.fc4(*ret)
-        ret = self.tanh(*ret)
-        ret = self.fc5(*ret, targets=targets)
-        return ret
-
-    # nn.Conv2d(in_ch, 4*width, 3, stride=1, padding=1),
-    # nn.ReLU(),
-    # nn.Conv2d(4*width, 4*width, 4, stride=2, padding=1),
-    # nn.ReLU(),
-    # nn.Conv2d(4*width, 8*width, 3, stride=1, padding=1),
-    # nn.ReLU(),
-    # nn.Conv2d(8*width, 8*width, 4, stride=2, padding=1),
-    # nn.ReLU(),
-    # Flatten(),
-    # nn.Linear(8*width*(in_dim // 4)*(in_dim // 4),linear_size),
-    # nn.ReLU(),
-    # nn.Linear(linear_size,linear_size),
-    # nn.ReLU(),
-    # nn.Linear(linear_size,10)
-
-     # def __init__(self, in_features, hidden, out_dim):
+    # def __init__(self, in_features, hidden, out_dim):
     #     super(Predictor, self).__init__()
-    #     self.fc1 = BoundLinear(in_features, hidden, bias=True)
+    #     self.conv1 = BoundConv2d(in_features//256, 256, 3, stride = 1, padding = 1)
+    #     self.fc1 = BoundReLU()
+    #     self.norm1 = BoundMeanNorm(256)
+    #     self.conv2 = BoundConv2d(256, 256, 3, stride = 1, padding = 1)
+    #     self.fc2 = BoundReLU()
+    #     self.norm2 = BoundMeanNorm(256)
+    #     self.conv3 = BoundConv2d(256, 512, 4, stride = 2, padding = 1)
+    #     self.fc3 = BoundReLU()
+    #     self.norm3 = BoundMeanNorm(512)
+    #     self.fc4 = BoundLinear(512*8*8, hidden, bias=True)
     #     self.tanh = BoundTanh()
-    #     self.fc2 = BoundFinalLinear(hidden, out_dim)
+    #     self.fc5 = BoundFinalLinear(hidden, out_dim)
+
     # def forward(self, x, lower=None, upper=None, targets=None):
     #     ret = x, lower, upper
+    #     # ret = ret[0].view(ret[0].size(0), 3, 32, 32), None if ret[1] is None else ret[1].view(ret[1].size(0), 3, 32, 32), None if ret[2] is None else ret[2].view(ret[2].size(0), 3, 32, 32)
+    #     ret = self.conv1(*ret)
     #     ret = self.fc1(*ret)
+    #     ret = self.norm1(*ret)
+    #     ret = self.conv2(*ret)
+    #     ret = self.fc2(*ret)
+    #     ret = self.norm2(*ret)
+    #     ret = self.conv3(*ret)
+    #     ret = self.fc3(*ret)
+    #     ret = self.norm3(*ret)
+    #     # ret[0] = ret[0].view(ret[0].size(0), -1)
+    #     ret = ret[0].view(ret[0].size(0),-1), None if ret[1] is None else ret[1].view(ret[1].size(0),-1), None if ret[2] is None else ret[2].view(ret[2].size(0),-1)
+    #     ret = self.fc4(*ret)
     #     ret = self.tanh(*ret)
-    #     ret = self.fc2(*ret, targets=targets)
+    #     ret = self.fc5(*ret, targets=targets)
     #     return ret
+
+     def __init__(self, in_features, hidden, out_dim):
+        super(Predictor, self).__init__()
+        self.fc1 = BoundLinear(in_features, hidden, bias=True)
+        self.tanh = BoundTanh()
+        self.fc2 = BoundFinalLinear(hidden, out_dim)
+    def forward(self, x, lower=None, upper=None, targets=None):
+        ret = x, lower, upper
+        ret = self.fc1(*ret)
+        ret = self.tanh(*ret)
+        ret = self.fc2(*ret, targets=targets)
+        return ret
