@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10, CIFAR100, MNIST, FashionMNIST
 from torch.utils.data import Dataset, DataLoader, ConcatDataset, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
-
+import PIL.Image
 mean = {
     'MNIST': np.array([0.1307]),
     'FashionMNIST': np.array([0.2860]),
@@ -48,23 +48,25 @@ class TruncateDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.indexes)
 
-class DDPM_Dataset(torch.utils.data.Dataset):
-    def __init__(self, images, labels, classes, transform):
-        self.images = images
-        self.labels = labels
-        self.classes = classes
-        self.transform = transform
-    def __getitem__(self, index):
-        image = self.images[index]
-        label = self.labels[index]
-        import numpy as np
-        from PIL import Image
-        arr = np.ascontiguousarray(image.numpy().transpose(1,2,0))
-        img = Image.fromarray(arr, 'RGB')
-        img = self.transform(img)
-        return img, label
-    def __len__(self):
-        return len(self.labels)
+class DDPMDataset(torch.utils.data.Dataset):
+  def __init__(self,cifar,ddpm,transform):
+    self.cifar = cifar
+    self.ddpm_images = ddpm['image']
+    self.ddpm_labels = ddpm['label']
+    self.transform = transform
+  def __getitem__(self,index):
+    label = None
+    image = None
+    if(index < len(self.cifar)):  
+      image, label = self.cifar.__getitem__(index)
+    else:
+      image = self.ddpm_images[index-len(self.cifar)]
+      image = PIL.Image.fromarray(image)
+      label = self.ddpm_labels[index-len(self.cifar)]
+    image = self.transform(image)
+    return image, label
+  def __len__(self):
+    return len(self.cifar)+len(self.ddpm)
 
 
 def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
@@ -75,20 +77,11 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
     Dataset = globals()[dataset]
-    train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
+    train_dataset = Dataset(root=datadir, train=True, download=True, transform=None)
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
-    if ddpm is True:
-        import numpy
-        ddpm_dataset = numpy.load('./data/cifar10_ddpm.npz')
-        ddpm_dataset = DDPM_Dataset(torch.from_numpy(ddpm_dataset['image']), torch.from_numpy(ddpm_dataset['label']), train_dataset.classes, train_transform)
-        # ddpm_dataset = TensorDataset(torch.from_numpy(ddpm_dataset['image']), torch.from_numpy(ddpm_dataset['label']))
-        # train_dataset = DDPM_Dataset(ConcatDataset([train_dataset, ddpm_dataset]), train_dataset.classes, train_transform)
-        train_dataset = ConcatDataset([train_dataset, ddpm_dataset])
-        print('ddpm_load')
-    if classes is not None:
-        train_dataset = TruncateDataset(train_dataset, classes)
-        test_dataset = TruncateDataset(test_dataset, classes)
-    return train_dataset, test_dataset
+    npzfile = np.load('/content/cifar10_ddpm.npz')
+    ddpm_dataset = DDPMDataset(train_dataset,npzfile,transform=train_transform)
+    return ddpm_dataset, test_dataset
 
 def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None, ddpm=False):
     train_dataset, test_dataset = get_dataset(dataset, datadir, augmentation=augmentation, classes=classes, ddpm=ddpm)
