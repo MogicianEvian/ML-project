@@ -57,7 +57,14 @@ class DDPM_Dataset(torch.utils.data.Dataset):
         return getattr(self.dataset, item)
     def __getitem__(self, index):
         item = self.dataset[index]
-        return item
+        import numpy as np
+        from PIL import Image
+        if item[0].dtype == torch.float32:
+            return item
+        arr = np.ascontiguousarray(item[0].transpose(1,2,0))
+        img = Image.fromarray(arr, 'RGB')
+        img = self.transform(img)
+        return img, item[1]
     def __len__(self):
         return len(self.dataset)
 
@@ -70,7 +77,7 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
     Dataset = globals()[dataset]
-    train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
+    train_dataset = Dataset(root=datadir, train=True, download=True)
     test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
     if ddpm is True:
         import numpy
