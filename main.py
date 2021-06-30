@@ -55,7 +55,7 @@ parser.add_argument('--swa_start', type=int, default=55, metavar='N',
 parser.add_argument('--swa_c_epochs', type=int, default=1, metavar='N', 
                     help='SWA model collection frequency/cycle length in epochs (default: 1)')
 parser.add_argument('--ddpm', action='store_true', help='ddpm data usage flag (default: off)')
-# path: ./data/cifar10_ddpm.npz
+# path: ./content/cifar10_ddpm.npz
 
 def cal_acc(outputs, targets):
     predicted = torch.max(outputs.data, 1)[1]
