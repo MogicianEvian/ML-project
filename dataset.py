@@ -77,11 +77,16 @@ def get_dataset(dataset, datadir, augmentation=True, classes=None, ddpm=False):
     train_transform = transforms.Compose((train_transforms[dataset] if augmentation else []) + default_transform)
     test_transform = transforms.Compose(default_transform)
     Dataset = globals()[dataset]
-    train_dataset = Dataset(root=datadir, train=True, download=True, transform=None)
-    test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
-    npzfile = np.load('/content/cifar10_ddpm.npz')
-    ddpm_dataset = DDPMDataset(train_dataset,npzfile,transform=train_transform)
-    return ddpm_dataset, test_dataset
+    if ddpm:
+        train_dataset = Dataset(root=datadir, train=True, download=True, transform=None)
+        test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
+        npzfile = np.load('/content/cifar10_ddpm.npz')
+        ddpm_dataset = DDPMDataset(train_dataset,npzfile,transform=train_transform)
+        return ddpm_dataset, test_dataset
+    else:
+        train_dataset = Dataset(root=datadir, train=True, download=True, transform=train_transform)
+        test_dataset = Dataset(root=datadir, train=False, download=True, transform=test_transform)
+        return train_dataset, test_dataset
 
 def load_data(dataset, datadir, batch_size, parallel, augmentation=True, workers=2, classes=None, ddpm=False):
     train_dataset, test_dataset = get_dataset(dataset, datadir, augmentation=augmentation, classes=classes, ddpm=ddpm)
